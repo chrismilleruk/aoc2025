@@ -43,7 +43,7 @@ fn solve_part1(input: &str) -> u32 {
 }
 
 fn solve_part2(input: &str) -> u32 {
-    let mut pos = 50;
+    let mut pos: i32 = 50;
     let mut count = 0;
 
     for line in input.lines() {
@@ -56,42 +56,20 @@ fn solve_part2(input: &str) -> u32 {
         let dir = &line[0..1];
         let amount: i32 = line[1..].parse().expect("Invalid number");
 
-        let prev_pos = pos;
-
-        // Update `pos` based on `dir` and `amount`
-        // Remember: The dial has numbers 0-99.
-        // Left (L) is toward lower numbers (subtraction).
-        // Right (R) is toward higher numbers (addition).
+        // Update `pos` based on `dir` and `amount` and count zero crossings.
+        // For Right (R), we count multiples of 100 in [pos, pos + amount].
+        // For Left (L), we count multiples of 100 in [pos - amount, pos].
+        //     using pos-1 to handle leaving and landing on 0
         match dir {
-            "L" => pos -= amount,
-            "R" => pos += amount,
+            "R" => {
+                count += ((pos + amount).div_euclid(100) - pos.div_euclid(100)) as u32;
+                pos = (pos + amount).rem_euclid(100);
+            }
+            "L" => {
+                count += ((pos - 1).div_euclid(100) - (pos - 1 - amount).div_euclid(100)) as u32;
+                pos = (pos - amount).rem_euclid(100);
+            }
             _ => panic!("Invalid direction"),
-        }
-
-        if pos < 0 {
-            // Count the number of times the dial turned past 0
-            count += pos.div_euclid(100).abs() as u32;
-
-            // Update `pos` to be in the range 0-99
-            pos = pos.rem_euclid(100);
-
-            // If we landed on zero, count that as well
-            if pos == 0 && prev_pos > 0 {
-                count += 1;
-            }
-            // If we left zero, avoid double-counting
-            if prev_pos == 0 && pos > 0 {
-                count -= 1;
-            }
-        } else if pos > 99 {
-            // Count the number of times the dial turned past 0
-            count += pos.div_euclid(100).abs() as u32;
-
-            // Update `pos` to be in the range 0-99
-            pos = pos.rem_euclid(100);
-        } else if pos == 0 {
-            // If we landed on zero without a rotation, count it
-            count += 1;
         }
     }
 
