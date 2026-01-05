@@ -3,11 +3,13 @@ use std::fs;
 fn main() {
     let input =
         fs::read_to_string("day-01/input.txt").expect("Should have been able to read the file");
-    let result = solve(&input);
-    println!("Password: {}", result);
+    let part1 = solve_part1(&input);
+    println!("Part 1 - Password: {}", part1);
+    let part2 = solve_part2(&input);
+    println!("Part 2: {}", part2);
 }
 
-fn solve(input: &str) -> u32 {
+fn solve_part1(input: &str) -> u32 {
     let mut pos = 50;
     let mut count = 0;
 
@@ -42,6 +44,10 @@ fn solve(input: &str) -> u32 {
     count
 }
 
+fn solve_part2(_input: &str) -> u32 {
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -59,6 +65,6 @@ L1
 L99
 R14
 L82";
-        assert_eq!(solve(input), 3);
+        assert_eq!(solve_part1(input), 3);
     }
 }
