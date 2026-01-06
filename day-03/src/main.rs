@@ -39,8 +39,65 @@ fn solve_part1(input: &str) -> u32 {
         .sum()
 }
 
-fn solve_part2(_input: &str) -> u32 {
-    todo!()
+fn solve_part2(input: &str) -> u64 {
+    input
+        .lines()
+        .map(|line| {
+            let line = line.trim();
+            if line.is_empty() {
+                return 0;
+            }
+
+            // Extract digits
+            let digits: Vec<u32> = line
+                .chars()
+                .filter_map(|c| c.to_digit(10))
+                .collect();
+
+            // Need exactly 12 digits
+            if digits.len() < 12 {
+                return 0;
+            }
+
+            // If exactly 12 digits, return the number directly
+            if digits.len() == 12 {
+                return digits.iter().fold(0u64, |acc, &d| acc * 10 + d as u64);
+            }
+
+            // Use greedy stack-based approach to select exactly 12 digits
+            // We need to remove (digits.len() - 12) digits
+            let to_remove = digits.len() - 12;
+            let mut stack: Vec<u32> = Vec::new();
+            let mut removed = 0;
+
+            for (i, &digit) in digits.iter().enumerate() {
+                // Calculate how many digits remain after current position
+                let remaining = digits.len() - i - 1;
+                
+                // While we can remove digits: have items in stack, haven't removed enough, 
+                // and current digit is larger than top of stack
+                while !stack.is_empty()
+                    && removed < to_remove
+                    && digit > *stack.last().unwrap()
+                    && stack.len() + remaining >= 12
+                {
+                    stack.pop();
+                    removed += 1;
+                }
+                
+                // Push current digit
+                stack.push(digit);
+            }
+
+            // If we still have more than 12 digits, remove smallest from end
+            while stack.len() > 12 {
+                stack.pop();
+            }
+
+            // Convert to number
+            stack.iter().fold(0u64, |acc, &d| acc * 10 + d as u64)
+        })
+        .sum()
 }
 
 #[cfg(test)]
@@ -270,6 +327,97 @@ mod tests {
         let input = "9988776655";
         // Max is 99
         assert_eq!(solve_part1(input), 99);
+    }
+
+    // Part 2 tests
+    #[test]
+    fn test_part2_example_from_problem() {
+        let input = "\
+987654321111111
+811111111111119
+234234234234278
+818181911112111";
+        // Expected: 987654321111 + 811111111119 + 434234234278 + 888911112111 = 3121910778619
+        assert_eq!(solve_part2(input), 3121910778619);
+    }
+
+    #[test]
+    fn test_part2_single_bank_987654321111111() {
+        let input = "987654321111111";
+        // Should produce 987654321111 (remove 3 trailing 1s)
+        assert_eq!(solve_part2(input), 987654321111);
+    }
+
+    #[test]
+    fn test_part2_single_bank_811111111111119() {
+        let input = "811111111111119";
+        // Should produce 811111111119 (remove 3 middle 1s)
+        assert_eq!(solve_part2(input), 811111111119);
+    }
+
+    #[test]
+    fn test_part2_single_bank_234234234234278() {
+        let input = "234234234234278";
+        // Should produce 434234234278 (remove 2, 3, 2 from start)
+        assert_eq!(solve_part2(input), 434234234278);
+    }
+
+    #[test]
+    fn test_part2_single_bank_818181911112111() {
+        let input = "818181911112111";
+        // Should produce 888911112111 (remove 1s from front)
+        assert_eq!(solve_part2(input), 888911112111);
+    }
+
+    #[test]
+    fn test_part2_exactly_12_digits() {
+        let input = "123456789012";
+        // Should return the number as-is
+        assert_eq!(solve_part2(input), 123456789012);
+    }
+
+    #[test]
+    fn test_part2_less_than_12_digits() {
+        let input = "12345678901";
+        // Should return 0 (not enough digits)
+        assert_eq!(solve_part2(input), 0);
+    }
+
+    #[test]
+    fn test_part2_all_same_digit() {
+        let input = "111111111111111";
+        // Should return first 12 digits: 111111111111
+        assert_eq!(solve_part2(input), 111111111111);
+    }
+
+    #[test]
+    fn test_part2_descending_order() {
+        let input = "987654321098765";
+        // Should remove smallest digits (2,1,0) from middle: 987654398765
+        assert_eq!(solve_part2(input), 987654398765);
+    }
+
+    #[test]
+    fn test_part2_ascending_order() {
+        let input = "123456789012345";
+        // Should remove smallest digits (1,2,3) from front: 456789012345
+        assert_eq!(solve_part2(input), 456789012345);
+    }
+
+    #[test]
+    fn test_part2_empty_line() {
+        let input = "";
+        assert_eq!(solve_part2(input), 0);
+    }
+
+    #[test]
+    fn test_part2_multiple_banks() {
+        let input = "\
+123456789012345
+987654321098765";
+        // First: 456789012345, Second: 987654398765
+        // Sum: 456789012345 + 987654398765 = 1444443411110
+        assert_eq!(solve_part2(input), 1444443411110);
     }
 
 }
