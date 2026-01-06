@@ -1,11 +1,57 @@
+use std::{ops::Div, u32};
+
 fn main() {
     let input = include_str!("../input.txt");
     println!("Part 1: {}", solve_part1(input));
     println!("Part 2: {}", solve_part2(input));
 }
 
-fn solve_part1(_input: &str) -> u32 {
-    0
+fn solve_part1(input: &str) -> u64 {
+    let mut sum_invalid = 0;
+    for range in input.split(',').map(|s| s.trim()) {
+        let (left_str, right_str) = range.split_once('-').unwrap();
+
+        let left = left_str.parse::<u64>().expect("Invalid number");
+        let right = right_str.parse::<u64>().expect("Invalid number");
+        assert!(left <= right, "Invalid range");
+        // assert!(left_str.len() == right_str.len(), "Imbalanced range");
+        // assert!(left_str.len() % 2 == 0, "Imbalanced range");
+
+        let in_range = |n: u64| n >= left && n <= right;
+
+        // Get first few digits of left and right according to special logic:
+        // eg. 1-15 >> 1-1, 95-105 >> 9-10, 890-1450 >> 8-14
+
+        // 1=1, 2=1, 3=1, 4=2, 5=2, 6=3, 7=3, 8=4, 9=4, 10=5, ...
+        let from = left_str[0..left_str.len().div(2).max(1)]
+            .parse::<u64>()
+            .expect("Invalid number");
+        // 1=1, 2=1, 3=2, 4=2, 5=3, 6=3, 7=4, 8=4, 9=5, 10=5, ...
+        let to = right_str[0..right_str.len().div_ceil(2)]
+            .parse::<u64>()
+            .expect("Invalid number");
+
+        // println!("Range {}-{} - seeking {}-{}", left_str, right_str, from, to);
+
+        for i in from..=to {
+            let mul = 10_u64.pow(i.ilog10() + 1);
+            let n = i * mul + i;
+            if n < left {
+                continue;
+            }
+            if n > right {
+                break;
+            }
+            // print!("{} ", n);
+            if in_range(n) {
+                // print!("| {} ", n);
+                sum_invalid += n;
+            }
+        }
+
+        // println!("+ Range {} - {}", range, sum_invalid);
+    }
+    sum_invalid
 }
 
 fn solve_part2(_input: &str) -> u32 {
@@ -36,6 +82,31 @@ mod tests {
         // Adding up all the invalid IDs in this example produces 1227775554.
 
         assert_eq!(solve_part1(input), 1227775554);
+    }
+
+    #[test]
+    fn test_part1_11_22() {
+        let input = "11-22";
+        assert_eq!(solve_part1(input), 33);
+    }
+
+    #[test]
+    fn test_part1_95_115() {
+        let input = "95-115";
+        assert_eq!(solve_part1(input), 99);
+    }
+
+    #[test]
+    fn test_part1_1_13() {
+        let input = "1-13";
+        assert_eq!(solve_part1(input), 11);
+    }
+
+    // 8989806846-8989985017
+    #[test]
+    fn test_part1_8989806846_8989985017() {
+        let input = "8989806846-8989985017";
+        assert_eq!(solve_part1(input), 8989889898);
     }
 
     #[test]
