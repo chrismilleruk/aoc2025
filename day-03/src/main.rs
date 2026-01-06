@@ -39,8 +39,55 @@ fn solve_part1(input: &str) -> u32 {
         .sum()
 }
 
-fn solve_part2(_input: &str) -> u32 {
-    todo!()
+fn solve_part2(input: &str) -> u64 {
+    const K: usize = 12; // Number of digits to select
+
+    input
+        .lines()
+        .map(|line| {
+            let line = line.trim();
+            if line.is_empty() {
+                return 0;
+            }
+
+            let digits: Vec<u64> = line
+                .chars()
+                .filter_map(|c| c.to_digit(10).map(|d| d as u64))
+                .collect();
+
+            let n = digits.len();
+            if n < K {
+                return 0;
+            }
+
+            // Greedy algorithm: for each of the K positions, pick the largest
+            // digit from the valid range that leaves enough digits remaining
+            let mut result: u64 = 0;
+            let mut prev_idx: usize = 0;
+
+            for j in 0..K {
+                // Valid range: [prev_idx, n - (K - j)]
+                // For j=0, prev_idx=0; for subsequent j, prev_idx = last picked index + 1
+                let start = if j == 0 { 0 } else { prev_idx };
+                let end = n - (K - j); // inclusive
+
+                // Find the maximum digit in range [start, end]
+                let mut max_digit = 0;
+                let mut max_idx = start;
+                for i in start..=end {
+                    if digits[i] > max_digit {
+                        max_digit = digits[i];
+                        max_idx = i;
+                    }
+                }
+
+                result = result * 10 + max_digit;
+                prev_idx = max_idx + 1;
+            }
+
+            result
+        })
+        .sum()
 }
 
 #[cfg(test)]
@@ -270,6 +317,81 @@ mod tests {
         let input = "9988776655";
         // Max is 99
         assert_eq!(solve_part1(input), 99);
+    }
+
+    // Part 2 tests
+
+    #[test]
+    fn test_part2_example_combined() {
+        let input = "\
+987654321111111
+811111111111119
+234234234234278
+818181911112111";
+        // 987654321111 + 811111111119 + 434234234278 + 888911112111 = 3121910778619
+        assert_eq!(solve_part2(input), 3121910778619);
+    }
+
+    #[test]
+    fn test_part2_bank_987654321111111() {
+        let input = "987654321111111";
+        // Turn on everything except some 1s at the end
+        assert_eq!(solve_part2(input), 987654321111);
+    }
+
+    #[test]
+    fn test_part2_bank_811111111111119() {
+        let input = "811111111111119";
+        // Turn on everything except some 1s, must include the 9
+        assert_eq!(solve_part2(input), 811111111119);
+    }
+
+    #[test]
+    fn test_part2_bank_234234234234278() {
+        let input = "234234234234278";
+        // Skip a 2, a 3, and another 2 near the start
+        assert_eq!(solve_part2(input), 434234234278);
+    }
+
+    #[test]
+    fn test_part2_bank_818181911112111() {
+        let input = "818181911112111";
+        // Skip some 1s near the front
+        assert_eq!(solve_part2(input), 888911112111);
+    }
+
+    #[test]
+    fn test_part2_exactly_12_digits() {
+        let input = "123456789012";
+        // Exactly 12 digits, return as-is
+        assert_eq!(solve_part2(input), 123456789012);
+    }
+
+    #[test]
+    fn test_part2_all_same_digits() {
+        let input = "111111111111111";
+        // All 1s, any 12 will give 111111111111
+        assert_eq!(solve_part2(input), 111111111111);
+    }
+
+    #[test]
+    fn test_part2_all_nines() {
+        let input = "999999999999999";
+        // All 9s, result is 999999999999
+        assert_eq!(solve_part2(input), 999999999999);
+    }
+
+    #[test]
+    fn test_part2_fewer_than_12_digits() {
+        let input = "12345";
+        // Fewer than 12 digits, should return 0
+        assert_eq!(solve_part2(input), 0);
+    }
+
+    #[test]
+    fn test_part2_empty_line() {
+        let input = "";
+        assert_eq!(solve_part2(input), 0);
     }
 
 }
