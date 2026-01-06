@@ -16,10 +16,7 @@ fn solve_part1(input: &str) -> u32 {
             }
 
             // Find the maximum two-digit number we can form from any two batteries
-            let digits: Vec<u32> = line
-                .chars()
-                .filter_map(|c| c.to_digit(10))
-                .collect();
+            let digits: Vec<u32> = line.chars().filter_map(|c| c.to_digit(10)).collect();
 
             if digits.len() < 2 {
                 return 0;
@@ -39,8 +36,50 @@ fn solve_part1(input: &str) -> u32 {
         .sum()
 }
 
-fn solve_part2(_input: &str) -> u32 {
-    todo!()
+fn max_subsequence_joltage(line: &str, keep: usize) -> u64 {
+    let digits: Vec<u8> = line
+        .chars()
+        .filter_map(|c| c.to_digit(10).map(|d| d as u8))
+        .collect();
+
+    if digits.len() < keep {
+        return 0;
+    }
+
+    let mut stack = Vec::with_capacity(digits.len());
+    let mut to_remove = digits.len() - keep;
+
+    for &digit in &digits {
+        while to_remove > 0 && !stack.is_empty() && *stack.last().unwrap() < digit {
+            stack.pop();
+            to_remove -= 1;
+        }
+        stack.push(digit);
+    }
+
+    while to_remove > 0 {
+        stack.pop();
+        to_remove -= 1;
+    }
+
+    stack.truncate(keep);
+
+    stack
+        .into_iter()
+        .fold(0u64, |acc, digit| acc * 10 + digit as u64)
+}
+
+fn solve_part2(input: &str) -> u64 {
+    input
+        .lines()
+        .map(|line| {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                return 0;
+            }
+            max_subsequence_joltage(trimmed, 12)
+        })
+        .sum()
 }
 
 #[cfg(test)]
@@ -272,4 +311,26 @@ mod tests {
         assert_eq!(solve_part1(input), 99);
     }
 
+    #[test]
+    fn test_max_subsequence_joltage_example_inputs() {
+        assert_eq!(max_subsequence_joltage("987654321111111", 12), 987654321111);
+        assert_eq!(max_subsequence_joltage("811111111111119", 12), 811111111119);
+        assert_eq!(max_subsequence_joltage("234234234234278", 12), 434234234278);
+        assert_eq!(max_subsequence_joltage("818181911112111", 12), 888911112111);
+    }
+
+    #[test]
+    fn test_max_subsequence_joltage_insufficient_digits() {
+        assert_eq!(max_subsequence_joltage("1234567", 12), 0);
+    }
+
+    #[test]
+    fn test_solve_part2_example_total() {
+        let input = "\
+987654321111111
+811111111111119
+234234234234278
+818181911112111";
+        assert_eq!(solve_part2(input), 3_121_910_778_619);
+    }
 }
