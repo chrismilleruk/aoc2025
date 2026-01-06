@@ -1,4 +1,4 @@
-use std::ops::Div;
+use std::{collections::HashSet, ops::Div};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -55,7 +55,7 @@ fn solve_part1(input: &str) -> u64 {
 }
 
 fn solve_part2(input: &str) -> u64 {
-    let mut sum_invalid = 0;
+    let mut invalid_numbers = HashSet::new();
     for range in input.split(',').map(|s| s.trim()) {
         let (left_str, right_str) = range.split_once('-').unwrap();
 
@@ -63,47 +63,74 @@ fn solve_part2(input: &str) -> u64 {
         let right = right_str.parse::<u64>().expect("Invalid number");
         assert!(left <= right, "Invalid range");
 
-        let in_range = |n: u64| n >= left && n <= right;
+        // Determine min/max digit lengths of numbers in the range
+        let len_min = left_str.len().min(right_str.len());
+        let len_max = left_str.len().max(right_str.len());
 
-        let _len_min = left_str.len().min(right_str.len()).div_ceil(2);
-        let len_max = left_str.len().max(right_str.len()).div_ceil(2);
+        // For each length L from min to max
+        for l in len_min..=len_max {
+            // Find all divisors k of L where k >= 2 (number of repetitions)
+            let repetitions: Vec<usize> = (2..=l).filter(|k| l % k == 0).collect();
 
-        println!(
-            "\nRange {}-{} - len {}-{}",
-            left_str, right_str, _len_min, len_max
-        );
+            for k in repetitions {
+                // Pattern length = L / k
+                let pattern_len = l / k;
 
-        // 998-1012 now has two invalid IDs, 999 and 1010.
-        // 1188511880-1188511890 still has one invalid ID, 1188511885.
-        // 222220-222224 still has one invalid ID, 222222.
-        // 1698522-1698528 still contains no invalid IDs.
-        // 446443-446449 still has one invalid ID, 446446.
-        // 38593856-38593862 still has one invalid ID, 38593859.
-        // 565653-565659 now has one invalid ID, 565656.
-        // 824824821-824824827 now has one invalid ID, 824824824.
-        for l in 1..=len_max {
-            let chunk_from = left_str[0..l].parse::<u64>().expect("Invalid number");
-            let chunk_to = right_str[0..l].parse::<u64>().expect("Invalid number");
-            print!("l{} chunk {}-{} ", l, chunk_from, chunk_to);
-            for chunk in chunk_from..=chunk_to {
-                let chunk_str = chunk.to_string();
-                let chunk_str = chunk_str.repeat(l.div(chunk_str.len()));
-                let n = chunk_str.parse::<u64>().expect("Invalid number");
-                if n < left {
+                // Calculate multiplier using geometric series formula:
+                // multiplier = 1 + 10^pattern_len + 10^(2*pattern_len) + ... + 10^((k-1)*pattern_len)
+                // This equals: (10^(k*pattern_len) - 1) / (10^pattern_len - 1)
+                let base = 10_u64.pow(pattern_len as u32);
+                let multiplier = if base == 1 {
+                    k as u64
+                } else {
+                    (base.pow(k as u32) - 1) / (base - 1)
+                };
+
+                // Calculate valid pattern range
+                // min_pattern = ceil(left / multiplier)
+                let min_pattern = (left + multiplier - 1) / multiplier;
+                // max_pattern = floor(right / multiplier)
+                let max_pattern = right / multiplier;
+
+                // Also need to ensure patterns have exactly pattern_len digits
+                let min_pattern_digits = 10_u64.pow((pattern_len - 1).max(0) as u32);
+                let max_pattern_digits = 10_u64.pow(pattern_len as u32) - 1;
+
+                // Clamp pattern range to valid digit range
+                let pattern_start = min_pattern.max(min_pattern_digits);
+                let pattern_end = max_pattern.min(max_pattern_digits);
+
+                if pattern_start > pattern_end {
                     continue;
                 }
-                if n > right {
-                    break;
-                }
-                print!("{} ", n);
-                if in_range(n) {
-                    print!("| {} ", n);
-                    sum_invalid += n;
+
+                // For each pattern in the valid range
+                for pattern in pattern_start..=pattern_end {
+                    let candidate = pattern * multiplier;
+
+                    // Verify it's in [left, right] and has exactly L digits
+                    if candidate < left || candidate > right {
+                        continue;
+                    }
+
+                    // Check that the candidate has exactly L digits
+                    let candidate_digits = candidate.ilog10() + 1;
+                    if candidate_digits != l as u32 {
+                        continue;
+                    }
+
+                    // Verify it's actually a repeated pattern
+                    let pattern_str = pattern.to_string();
+                    let expected = pattern_str.repeat(k);
+                    let candidate_str = candidate.to_string();
+                    if expected == candidate_str {
+                        invalid_numbers.insert(candidate);
+                    }
                 }
             }
         }
     }
-    sum_invalid
+    invalid_numbers.iter().sum()
 }
 
 #[cfg(test)]
