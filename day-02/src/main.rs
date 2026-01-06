@@ -1,4 +1,4 @@
-use std::{ops::Div, u32};
+use std::ops::Div;
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -54,8 +54,56 @@ fn solve_part1(input: &str) -> u64 {
     sum_invalid
 }
 
-fn solve_part2(_input: &str) -> u32 {
-    0
+fn solve_part2(input: &str) -> u64 {
+    let mut sum_invalid = 0;
+    for range in input.split(',').map(|s| s.trim()) {
+        let (left_str, right_str) = range.split_once('-').unwrap();
+
+        let left = left_str.parse::<u64>().expect("Invalid number");
+        let right = right_str.parse::<u64>().expect("Invalid number");
+        assert!(left <= right, "Invalid range");
+
+        let in_range = |n: u64| n >= left && n <= right;
+
+        let _len_min = left_str.len().min(right_str.len()).div_ceil(2);
+        let len_max = left_str.len().max(right_str.len()).div_ceil(2);
+
+        println!(
+            "\nRange {}-{} - len {}-{}",
+            left_str, right_str, _len_min, len_max
+        );
+
+        // 998-1012 now has two invalid IDs, 999 and 1010.
+        // 1188511880-1188511890 still has one invalid ID, 1188511885.
+        // 222220-222224 still has one invalid ID, 222222.
+        // 1698522-1698528 still contains no invalid IDs.
+        // 446443-446449 still has one invalid ID, 446446.
+        // 38593856-38593862 still has one invalid ID, 38593859.
+        // 565653-565659 now has one invalid ID, 565656.
+        // 824824821-824824827 now has one invalid ID, 824824824.
+        for l in 1..=len_max {
+            let chunk_from = left_str[0..l].parse::<u64>().expect("Invalid number");
+            let chunk_to = right_str[0..l].parse::<u64>().expect("Invalid number");
+            print!("l{} chunk {}-{} ", l, chunk_from, chunk_to);
+            for chunk in chunk_from..=chunk_to {
+                let chunk_str = chunk.to_string();
+                let chunk_str = chunk_str.repeat(l.div(chunk_str.len()));
+                let n = chunk_str.parse::<u64>().expect("Invalid number");
+                if n < left {
+                    continue;
+                }
+                if n > right {
+                    break;
+                }
+                print!("{} ", n);
+                if in_range(n) {
+                    print!("| {} ", n);
+                    sum_invalid += n;
+                }
+            }
+        }
+    }
+    sum_invalid
 }
 
 #[cfg(test)]
@@ -111,7 +159,25 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        let input = "";
-        assert_eq!(solve_part2(input), 0);
+        let input = "11-22,95-115,998-1012,1188511880-1188511890,222220-222224,
+1698522-1698528,446443-446449,38593856-38593862,565653-565659,
+824824821-824824827,2121212118-2121212124
+";
+        // From the same example as before:
+
+        // 11-22 still has two invalid IDs, 11 and 22.
+        // 95-115 now has two invalid IDs, 99 and 111.
+        // 998-1012 now has two invalid IDs, 999 and 1010.
+        // 1188511880-1188511890 still has one invalid ID, 1188511885.
+        // 222220-222224 still has one invalid ID, 222222.
+        // 1698522-1698528 still contains no invalid IDs.
+        // 446443-446449 still has one invalid ID, 446446.
+        // 38593856-38593862 still has one invalid ID, 38593859.
+        // 565653-565659 now has one invalid ID, 565656.
+        // 824824821-824824827 now has one invalid ID, 824824824.
+        // 2121212118-2121212124 now has one invalid ID, 2121212121.
+        // Adding up all the invalid IDs in this example produces 4174379265.
+
+        assert_eq!(solve_part2(input), 4174379265);
     }
 }
