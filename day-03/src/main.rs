@@ -39,8 +39,49 @@ fn solve_part1(input: &str) -> u32 {
         .sum()
 }
 
-fn solve_part2(_input: &str) -> u32 {
-    todo!()
+fn solve_part2(input: &str) -> u64 {
+    input
+        .lines()
+        .map(|line| {
+            let line = line.trim();
+            if line.is_empty() {
+                return 0;
+            }
+
+            let digits: Vec<u32> = line
+                .chars()
+                .filter_map(|c| c.to_digit(10))
+                .collect();
+
+            if digits.len() < 12 {
+                return 0;
+            }
+
+            let mut to_remove = digits.len() - 12;
+            let mut stack: Vec<u32> = Vec::new();
+
+            for &digit in &digits {
+                while to_remove > 0 && !stack.is_empty() && *stack.last().unwrap() < digit {
+                    stack.pop();
+                    to_remove -= 1;
+                }
+                stack.push(digit);
+            }
+
+            // If we still need to remove digits, remove from the end
+            while to_remove > 0 && !stack.is_empty() {
+                stack.pop();
+                to_remove -= 1;
+            }
+
+            // Convert the first 12 digits to a u64
+            let mut result: u64 = 0;
+            for &digit in stack.iter().take(12) {
+                result = result * 10 + digit as u64;
+            }
+            result
+        })
+        .sum()
 }
 
 #[cfg(test)]
@@ -272,4 +313,37 @@ mod tests {
         assert_eq!(solve_part1(input), 99);
     }
 
+    #[test]
+    fn test_example_part2() {
+        let input = "\
+987654321111111
+811111111111119
+234234234234278
+818181911112111";
+        assert_eq!(solve_part2(input), 3121910778619);
+    }
+
+    #[test]
+    fn test_single_bank_part2_987654321111111() {
+        let input = "987654321111111";
+        assert_eq!(solve_part2(input), 987654321111);
+    }
+
+    #[test]
+    fn test_single_bank_part2_811111111111119() {
+        let input = "811111111111119";
+        assert_eq!(solve_part2(input), 811111111119);
+    }
+
+    #[test]
+    fn test_single_bank_part2_234234234234278() {
+        let input = "234234234234278";
+        assert_eq!(solve_part2(input), 434234234278);
+    }
+
+    #[test]
+    fn test_single_bank_part2_818181911112111() {
+        let input = "818181911112111";
+        assert_eq!(solve_part2(input), 888911112111);
+    }
 }
