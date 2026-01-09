@@ -36,8 +36,21 @@ fn main() {
         part1_swar, duration
     );
 
+    let start = Instant::now();
+    let part1_swar_s = experimental::solve_part1_swar_scalar(input);
+    let duration = start.elapsed();
+    println!(
+        "Part 1 - Accessible rolls (SWAR Scalar):   {} ({:?})",
+        part1_swar_s, duration
+    );
+
+    let start = Instant::now();
     let part2 = solve_part2(input);
-    println!("Part 2: {}", part2);
+    let duration = start.elapsed();
+    println!(
+        "Part 2 - Total removed rolls:           {} ({:?})",
+        part2, duration
+    );
 }
 
 fn solve_part1(input: &str) -> usize {
@@ -118,9 +131,8 @@ fn solve_part1(input: &str) -> usize {
     accessible_count
 }
 
-fn solve_part2(_input: &str) -> usize {
-    // Placeholder logic - NOT SOLVING IT
-    0
+fn solve_part2(input: &str) -> usize {
+    experimental::solve_part2_swar(input)
 }
 
 #[cfg(test)]
@@ -137,8 +149,7 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        // Placeholder for part 2 test
-        // let input = include_str!("../example1.txt");
-        // assert_eq!(solve_part2(input), 0);
+        let input = include_str!("../example1.txt");
+        assert_eq!(solve_part2(input), 43);
     }
 }
