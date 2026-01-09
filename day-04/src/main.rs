@@ -28,6 +28,14 @@ fn main() {
         part1_auto, duration
     );
 
+    let start = Instant::now();
+    let part1_swar = experimental::solve_part1_parallel_swar(input);
+    let duration = start.elapsed();
+    println!(
+        "Part 1 - Accessible rolls (SWAR Parallel): {} ({:?})",
+        part1_swar, duration
+    );
+
     let part2 = solve_part2(input);
     println!("Part 2: {}", part2);
 }
