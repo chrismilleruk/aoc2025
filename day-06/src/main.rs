@@ -20,74 +20,66 @@ fn solve_part1(input: &str) -> u128 {
         return 0;
     }
 
-    let max_len = lines.iter().map(|l| l.len()).max().unwrap_or(0);
-    let grid: Vec<Vec<char>> = lines
-        .iter()
-        .map(|l| {
-            let mut chars: Vec<char> = l.chars().collect();
-            while chars.len() < max_len {
-                chars.push(' ');
-            }
-            chars
-        })
-        .collect();
-
-    let mut sep_cols = Vec::new();
-    for x in 0..max_len {
-        let mut all_spaces = true;
-        for y in 0..grid.len() {
-            if grid[y][x] != ' ' {
-                all_spaces = false;
-                break;
-            }
-        }
-        if all_spaces {
-            sep_cols.push(x);
-        }
-    }
-
-    let mut problems = Vec::new();
-    let mut start_x = 0;
-    for &sep in &sep_cols {
-        if sep > start_x {
-            problems.push((start_x, sep));
-        }
-        start_x = sep + 1;
-    }
-    if start_x < max_len {
-        problems.push((start_x, max_len));
+    let width = lines[0].len();
+    for line in &lines {
+        assert_eq!(
+            line.len(),
+            width,
+            "All input lines must have the same length"
+        );
     }
 
     let mut total = 0;
-    for (s, e) in problems {
-        let mut nums = Vec::new();
-        let mut op = ' ';
-        for y in 0..grid.len() {
-            let row_part: String = grid[y][s..e].iter().collect();
-            let trimmed = row_part.trim();
-            if trimmed.is_empty() {
-                continue;
-            }
-            if trimmed == "+" || trimmed == "*" {
-                op = trimmed.chars().next().unwrap();
-            } else if let Ok(n) = trimmed.parse::<u128>() {
-                nums.push(n);
-            }
-        }
+    let mut block_start = None;
 
-        if nums.is_empty() {
-            continue;
-        }
-
-        let res = match op {
-            '+' => nums.iter().sum::<u128>(),
-            '*' => nums.iter().product::<u128>(),
-            _ => 0,
+    for x in 0..=width {
+        // Treat the end of the line as a gap
+        let is_gap = if x == width {
+            true
+        } else {
+            lines.iter().all(|line| line.as_bytes()[x] == b' ')
         };
-        total += res;
+
+        match (is_gap, block_start) {
+            // Gap found while in a block: process the completed block
+            (true, Some(start_idx)) => {
+                total += process_block(&lines, start_idx, x);
+                block_start = None;
+            }
+            // Non-gap character found while not in a block: start a new block
+            (false, None) => {
+                block_start = Some(x);
+            }
+            // Subsequent gap characters or non-gap characters without a transition: do nothing
+            _ => {}
+        }
     }
 
     total
+}
+
+fn process_block(lines: &[&str], start: usize, end: usize) -> u128 {
+    let mut nums = Vec::new();
+    let mut op = None;
+
+    for line in lines {
+        let chunk = line[start..end].trim();
+        if chunk.is_empty() {
+            continue;
+        }
+
+        if chunk == "+" || chunk == "*" {
+            op = Some(chunk.chars().next().unwrap());
+        } else if let Ok(n) = chunk.parse::<u128>() {
+            nums.push(n);
+        }
+    }
+
+    match op {
+        Some('+') => nums.iter().sum(),
+        Some('*') => nums.iter().product(),
+        _ => 0,
+    }
 }
 
 fn solve_part2(_input: &str) -> u128 {
